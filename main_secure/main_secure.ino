@@ -85,8 +85,7 @@ void loop() {
   // }
 
   // push to thingspeak channel every 15 minutes
-  //if (thingspeakloop == 0 || (millis() - thingspeakloop) > (1000 * 60 * 15)) {
-  if (thingspeakloop == 0 || (millis() - thingspeakloop) > (1000 * 10)) {
+  if (thingspeakloop == 0 || (millis() - thingspeakloop) > (1000 * 60 * 15)) {
     thingspeakGet(temperature);
     thingspeakloop = millis();
   }
