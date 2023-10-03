@@ -12,11 +12,6 @@
 #include "certs.h"
 #include "arduino_secrets.h"
 
-#ifndef STASSID
-#define STASSID SECRET_SSID1
-#define STAPSK SECRET_SSID1_PWORD
-#endif
-
 // resistance at 25 degrees C
 #define THERMISTORNOMINAL 10000      
 // temp. for nominal resistance (almost always 25 C)
@@ -56,8 +51,16 @@ void setup() {
 
   // Posting temperature setup
   WiFi.mode(WIFI_STA);
-  WiFiMulti.addAP(STASSID, STAPSK);
-  Serial.println("setup() done connecting to ssid '" STASSID "'");
+  WiFiMulti.addAP(SECRET_SSID1, SECRET_SSID1_PWORD);
+  WiFiMulti.addAP(SECRET_SSID2, SECRET_SSID2_PWORD);
+    while (WiFiMulti.run() != WL_CONNECTED) { // Wait for the Wi-Fi to connect: scan for Wi-Fi networks, and connect to the strongest of the networks above
+    delay(250);
+    Serial.print('.');
+  }
+  Serial.print("setup() done connected to ssid ");
+  Serial.println(WiFi.SSID());
+  Serial.print("IP address:\t");
+  Serial.println(WiFi.localIP());
   grafanaloop = 0;
   thingspeakloop = 0;
 
@@ -76,13 +79,14 @@ void loop() {
   }
 
   // push to grafana channel every 5 minutes
-  if (grafanaloop == 0 || (millis() - grafanaloop) > (1000 * 60 * 5)) {
-    grafanaPost(temperature);
-    grafanaloop = millis();
-  }
+  // if (grafanaloop == 0 || (millis() - grafanaloop) > (1000 * 60 * 5)) {
+  //   grafanaPost(temperature);
+  //   grafanaloop = millis();
+  // }
 
   // push to thingspeak channel every 15 minutes
-  if (thingspeakloop == 0 || (millis() - thingspeakloop) > (1000 * 60 * 15)) {
+  //if (thingspeakloop == 0 || (millis() - thingspeakloop) > (1000 * 60 * 15)) {
+  if (thingspeakloop == 0 || (millis() - thingspeakloop) > (1000 * 10)) {
     thingspeakGet(temperature);
     thingspeakloop = millis();
   }
@@ -190,12 +194,16 @@ void thingspeakGet(float temperature) {
 
   HttpClient client = HttpClient(wifi, "api.thingspeak.com", 80);
 
-  client.get(apiString);
-  int statusCode = client.responseStatusCode();
-  String response = client.responseBody();
-  Serial.print("thingspeak GET Status code: ");
-  Serial.println(statusCode);
-  Serial.print("Response: ");
-  Serial.println(response);
-  Serial.printf("%s - %0.2f\n", response, temperature);
+  if (client.get(apiString)){
+    Serial.printf("There was an error in client.get(%s)\n", apiString);
+  }
+  else {
+    int statusCode = client.responseStatusCode();
+    String response = client.responseBody();
+    Serial.print("thingspeak GET Status code: ");
+    Serial.println(statusCode);
+    Serial.print("Response: ");
+    Serial.println(response);
+    Serial.printf("%s - %0.2f\n", response, temperature);
+  }
 }
